@@ -1,0 +1,64 @@
+# Menginstal dan memuat paket "DEoptim"
+install.packages("DEoptim")
+library(DEoptim)
+
+# Memasukkan dataset ke dalam variabel "dataset"
+dataset <- data.frame(
+  Date = as.Date(c("12/1/2023","1/1/2024","2/1/2024","3/1/2024","4/1/2024","5/1/2024","6/1/2024","7/1/2024","8/1/2024","9/1/2024","10/1/2024"), 
+                 format = "%m/%d/%Y"),
+  Nilai_Aktual = c(28990,25334,25354,30049,21802,20232,30439,27134,29692,28845,29249),
+  Forecast =  c(28913,28654,28913,28913,22689,27464,30769,28211,29058,28654,28913)
+)
+
+# Menginisialisasi fungsi objektif (MSE)
+calculate_mse <- function(alpha_beta, dataset) {
+  alpha <- alpha_beta[1]
+  beta <- alpha_beta[2]
+  forecast <- alpha * dataset$Forecast + beta
+  mse <- mean((dataset$Nilai_Aktual - forecast)^2)
+  return(mse)
+}
+
+# Mengoptimasi nilai alpha dan beta menggunakan algoritma Evolusi Diferensial
+optimized_result <- DEoptim(calculate_mse, lower = c(0, 0), upper = c(40000, 40000), dataset = dataset)
+
+# Mendapatkan nilai optimal alpha dan beta
+optimized_alpha <- optimized_result$optim$bestmem[1]
+optimized_beta <- optimized_result$optim$bestmem[2]
+
+# Menghitung hasil peramalan yang dioptimasi
+optimized_forecast <- optimized_alpha * dataset$Nilai_Aktual + optimized_beta
+
+# Menggabungkan hasil peramalan yang telah dioptimasi dengan data lainnya
+optimized_dataset <- data.frame(dataset, Optimized_Forecast = optimized_forecast)
+
+# Menampilkan hasil peramalan yang telah dioptimasi
+print(optimized_dataset)
+
+# Memuat paket "ggplot2"
+library(ggplot2)
+
+# Memuat paket "ggplot2"
+library(ggplot2)
+
+# Membuat plot gabungan
+ggplot(optimized_dataset, aes(x = Date)) +
+  geom_line(aes(y = Forecast, color = "Forecast"), size = 1) +
+  geom_line(aes(y = Optimized_Forecast, color = "Optimized Forecast"), size = 1) +
+  labs(x = "Date", y = "Nilai", color = "Legend") +
+  scale_color_manual(values = c("Forecast" = "blue", "Optimized Forecast" = "red")) +
+  theme_minimal()
+
+
+# Menghitung MAPE untuk kolom Forecast
+MAPE_Forecast.LQP <- (1/11) * sum(abs((optimized_dataset$Nilai_Aktual - optimized_dataset$Forecast)/optimized_dataset$Nilai_Aktual)) * 100/100
+
+# Menghitung MAPE untuk kolom Optimized_Forecast
+MAPE_Optimized.DE <- (1/11) * sum(abs((optimized_dataset$Nilai_Aktual - optimized_dataset$Optimized_Forecast)/optimized_dataset$Nilai_Aktual)) * 100/100
+
+
+# Menampilkan hasil MAPE
+print("MAPE Forecast:")
+print(MAPE_Forecast.LQP)
+print("MAPE Optimized Forecast:")
+print(MAPE_Optimized.DE)
